@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import segment_badge %}
+{% block title %}{{ customer.name }}{% endblock %}
+{% block eyebrow %}Customer since {{ customer.created_at|dt('%b %Y') }}{% endblock %}
+{% block heading %}{{ customer.name }}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="card kpi dark"><div class="label">Total spent</div><div class="value">{{ stats.spent|inr }}</div><div class="sub">{{ stats.orders }} orders</div></div></div>
+  <div class="col-6 col-lg-3"><div class="card kpi"><div class="label">Average order</div><div class="value">{{ stats.avg|inr }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="card kpi"><div class="label">Last purchase</div><div class="value fs-4">{{ stats.last|dt('%d %b %Y') }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="card kpi"><div class="d-flex justify-content-between"><div class="label">AI segment</div><span class="ai-chip">K-Means</span></div>
+    <div class="my-2">{{ segment_badge(segment) }}</div><div class="sub">{{ action or 'Needs more purchases to be segmented.' }}</div></div></div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card mb-3"><div class="card-header"><span class="card-title-sm">Contact</span></div>
+      <div class="card-body">
+        <div><i class="bi bi-telephone me-2"></i>{{ customer.phone or '—' }}</div>
+        <div><i class="bi bi-envelope me-2"></i>{{ customer.email or '—' }}</div>
+        <div><i class="bi bi-geo-alt me-2"></i>{{ customer.city or '—' }}</div>
+      </div></div>
+    <div class="card"><div class="card-header"><span class="card-title-sm">Favourite products</span></div>
+      <div class="card-body p-0"><table class="table"><tbody>
+        {% for f in favourites %}<tr><td class="ps-3">{{ f.name }}</td><td class="text-end pe-3">{{ f.qty }} units</td></tr>
+        {% else %}<tr><td class="text-muted ps-3">No purchases yet.</td></tr>{% endfor %}
+      </tbody></table></div></div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card"><div class="card-header"><span class="card-title-sm">Purchase history</span></div>
+      <div class="card-body p-0"><table class="table table-hover">
+        <thead><tr><th class="ps-3">Invoice</th><th>Date</th><th class="text-end">Units</th><th>Payment</th><th class="text-end pe-3">Total</th></tr></thead>
+        <tbody>{% for h in history %}
+          <tr><td class="ps-3"><a href="{{ url_for('sales_detail', sale_id=h.id) }}">{{ h.invoice_no }}</a></td><td>{{ h.sale_date|dt }}</td>
+          <td class="text-end">{{ h.units }}</td><td>{{ h.payment_method }}</td><td class="text-end pe-3">{{ h.total|inr(2) }}</td></tr>
+        {% else %}<tr><td colspan="5" class="text-center text-muted py-4">No purchases yet.</td></tr>{% endfor %}</tbody>
+      </table></div></div>
+  </div>
+</div>
+{% endblock %}

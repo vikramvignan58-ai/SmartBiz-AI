@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block eyebrow %}Report generation{% endblock %}
+{% block heading %}Reports{% endblock %}
+{% block content %}
+<div class="card mb-3"><div class="card-body">
+  <form class="row g-2 align-items-end">
+    <div class="col-md-4"><label class="form-label small fw-semibold">Report</label>
+      <select name="kind" class="form-select">{% for k, v in types.items() %}<option value="{{ k }}" {% if k == kind %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><label class="form-label small fw-semibold">From</label><input type="date" name="start" value="{{ report.start }}" class="form-control"></div>
+    <div class="col-md-3"><label class="form-label small fw-semibold">To</label><input type="date" name="end" value="{{ report.end }}" class="form-control"></div>
+    <div class="col-md-2"><button class="btn btn-navy w-100"><i class="bi bi-play-fill"></i> Generate</button></div>
+  </form>
+</div></div>
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h2 class="h4 fw-bold mb-0" style="color:#14213d">{{ report.title }}</h2>
+    <div class="text-muted small">{% if kind == 'inventory' %}Current stock position{% else %}{{ report.start|dt('%d %b %Y') }} – {{ report.end|dt('%d %b %Y') }}{% endif %} · {{ report.rows|length }} rows</div>
+  </div>
+  <div class="btn-group">
+    {% for f, icon in [('csv', 'filetype-csv'), ('xlsx', 'file-earmark-excel'), ('pdf', 'file-earmark-pdf')] %}
+      <a class="btn btn-outline-secondary" href="{{ url_for('reports', kind=kind, start=report.start, end=report.end, format=f) }}"><i class="bi bi-{{ icon }}"></i> {{ f|upper }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  {% for label, value in report.summary %}
+  <div class="col-md-4"><div class="card kpi"><div class="label">{{ label }}</div>
+    <div class="value">{{ value|inr if value is number else value }}</div></div></div>
+  {% endfor %}
+</div>
+
+<div class="card"><div class="card-body p-0"><div class="table-responsive" style="max-height:620px">
+  <table class="table table-hover table-sm">
+    <thead class="sticky-top" style="background:#fffefb"><tr>{% for c in report.columns %}<th class="{{ 'ps-3' if loop.first }}">{{ c }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for r in report.rows %}<tr>
+      {% for v in r %}<td class="{{ 'ps-3' if loop.first }} {{ 'text-end' if v is number }}">{% if loop.index0 in report.money_cols %}{{ v|inr(2) }}{% elif v is number %}{{ '{:,.0f}'.format(v) if v == v|int else '{:,.2f}'.format(v) }}{% else %}{{ v }}{% endif %}</td>{% endfor %}
+    </tr>{% else %}<tr><td colspan="{{ report.columns|length }}" class="text-center text-muted py-5">No data for this period.</td></tr>{% endfor %}</tbody>
+  </table>
+</div></div></div>
+{% endblock %}

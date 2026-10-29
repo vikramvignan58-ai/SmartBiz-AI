@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}{{ product.name }}{% endblock %}
+{% block eyebrow %}{{ product.category }} · {{ product.sku }}{% endblock %}
+{% block heading %}{{ product.name }}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="card kpi dark"><div class="label">In stock</div><div class="value">{{ product.stock }}</div><div class="sub">Reorder level {{ product.reorder_level }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="card kpi"><div class="label">Price / cost</div><div class="value">{{ product.price|inr }}</div><div class="sub">Cost {{ product.cost|inr }} · margin {{ '%.0f'|format((product.price - product.cost) / product.price * 100 if product.price else 0) }}%</div></div></div>
+  <div class="col-6 col-lg-3"><div class="card kpi"><div class="label">AI demand estimate</div><div class="value">{{ ai.daily_demand if ai else '—' }}<span class="fs-6 fw-normal"> /day</span></div><div class="sub">{% if ai and ai.days_left is not none %}≈ {{ ai.days_left }} days of stock left{% else %}No recent sales{% endif %}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="card kpi"><div class="label">Reorder advice</div>
+    <div class="my-1">{{ status_badge(ai.status) if ai else '' }}</div>
+    <div class="sub">{% if ai and ai.suggested_qty %}Order <b>{{ ai.suggested_qty }}</b> units (≈ {{ ai.est_cost|inr }}){% else %}No order needed{% endif %}</div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-xl-7">
+    <div class="card mb-3">
+      <div class="card-header"><span class="card-title-sm">Units sold per week</span></div>
+      <div class="card-body"><div style="height:240px"><canvas id="weekly"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title-sm">Purchase history</span></div>
+      <div class="card-body p-0"><table class="table">
+        <thead><tr><th class="ps-3">Date</th><th>Supplier</th><th class="text-end">Qty</th><th class="text-end pe-3">Unit cost</th></tr></thead>
+        <tbody>{% for h in history %}<tr><td class="ps-3">{{ h.purchase_date|dt('%d %b %Y') }}</td><td>{{ h.supplier or '—' }}</td><td class="text-end">{{ h.quantity }}</td><td class="text-end pe-3">{{ h.unit_cost|inr(2) }}</td></tr>
+        {% else %}<tr><td colspan="4" class="text-center text-muted py-4">No purchases recorded.</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="col-xl-5">
+    <div class="card mb-3">
+      <div class="card-header"><span class="card-title-sm">Restock (goods received)</span></div>
+      <div class="card-body">
+        <form method="post" class="row g-2">
+          <input type="hidden" name="action" value="restock">
+          <div class="col-4"><label class="form-label small fw-semibold">Quantity</label><input name="quantity" type="number" min="1" value="{{ ai.suggested_qty if ai and ai.suggested_qty else '' }}" class="form-control" required></div>
+          <div class="col-4"><label class="form-label small fw-semibold">Unit cost (₹)</label><input name="unit_cost" type="number" step="0.01" min="0" value="{{ product.cost }}" class="form-control"></div>
+          <div class="col-4"><label class="form-label small fw-semibold">Supplier</label><input name="supplier" value="{{ product.supplier or '' }}" class="form-control"></div>
+          <div class="col-12"><button class="btn btn-accent w-100 mt-1"><i class="bi bi-box-arrow-in-down"></i> Add to stock</button></div>
+        </form>
+      </div>
+    </div>
+    {% if session.role == 'admin' %}
+    <div class="card">
+      <div class="card-header"><span class="card-title-sm">Edit product</span></div>
+      <div class="card-body">
+        <form method="post">
+          <input type="hidden" name="action" value="update">
+          {% include "_product_fields.html" %}
+          <button class="btn btn-navy mt-3">Save changes</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>const w = {{ chart|tojson }}; barChart("weekly", w.labels, w.values, "Units sold", false);</script>
+{% endblock %}

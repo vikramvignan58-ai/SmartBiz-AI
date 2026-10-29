@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "_macros.html" import segment_badge %}
+{% block title %}Customers{% endblock %}
+{% block eyebrow %}Customer management{% endblock %}
+{% block heading %}Customers{% endblock %}
+{% block actions %}<a href="{{ url_for('customers_new') }}" class="btn btn-navy"><i class="bi bi-person-plus"></i> Add customer</a>{% endblock %}
+{% block content %}
+{% if segments.ready %}
+<div class="row g-3 mb-3">
+  {% for s in segments.summary %}
+  <div class="col-6 col-lg-3">
+    <a href="{{ url_for('customers', segment=s.segment) }}" class="text-decoration-none">
+    <div class="card kpi {% if segment == s.segment %}dark{% endif %}">
+      <div class="d-flex justify-content-between align-items-start"><div class="label">{{ s.segment }}</div><span class="ai-chip">AI</span></div>
+      <div class="value">{{ s.customers }}</div>
+      <div class="sub">Avg spend {{ s.avg_spend|inr }} · last visit ≈ {{ '%.0f'|format(s.avg_recency) }} days ago</div>
+    </div></a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card mb-3"><div class="card-body">
+  <form class="row g-2 align-items-end">
+    <div class="col-sm-4"><label class="form-label small fw-semibold">Segment</label>
+      <select name="segment" class="form-select"><option value="">All segments</option>
+        {% for s in segment_names %}<option {% if s == segment %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+    <div class="col-sm-6"><label class="form-label small fw-semibold">Search</label><input name="q" value="{{ q }}" placeholder="Name, phone or city" class="form-control"></div>
+    <div class="col-sm-2"><button class="btn btn-navy w-100"><i class="bi bi-funnel"></i> Filter</button></div>
+  </form>
+</div></div>
+
+<div class="card"><div class="card-body p-0"><div class="table-responsive">
+  <table class="table table-hover">
+    <thead><tr><th class="ps-3">Customer</th><th>Phone</th><th>City</th><th class="text-end">Orders</th><th class="text-end">Total spent</th><th>Last purchase</th><th class="pe-3">Segment</th></tr></thead>
+    <tbody>
+    {% for c in customers %}
+      <tr><td class="ps-3"><a href="{{ url_for('customers_detail', customer_id=c.id) }}">{{ c.name }}</a></td>
+        <td>{{ c.phone or '—' }}</td><td>{{ c.city or '—' }}</td><td class="text-end">{{ c.orders }}</td>
+        <td class="text-end fw-semibold">{{ c.spent|inr }}</td><td class="small text-muted">{{ c.last_purchase|dt('%d %b %Y') }}</td>
+        <td class="pe-3">{{ segment_badge(segments.by_customer.get(c.id)) }}</td></tr>
+    {% else %}
+      <tr><td colspan="7" class="text-center text-muted py-5">No customers found.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}

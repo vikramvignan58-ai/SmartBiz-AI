@@ -1,0 +1,9 @@
+{% macro status_badge(status) -%}
+  {%- set cls = {'Out of stock': 'st-out', 'Critical': 'st-critical', 'Reorder soon': 'st-soon', 'Healthy': 'st-ok'}[status] -%}
+  <span class="badge-status {{ cls }}">{{ status }}</span>
+{%- endmacro %}
+
+{% macro segment_badge(segment) -%}
+  {%- if segment -%}<span class="badge-status seg-{{ segment|replace(' ', '-') }}">{{ segment }}</span>
+  {%- else -%}<span class="text-muted small">New</span>{%- endif -%}
+{%- endmacro %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}Inventory{% endblock %}
+{% block eyebrow %}Inventory management{% endblock %}
+{% block heading %}Inventory{% endblock %}
+{% block actions %}{% if session.role == 'admin' %}<a href="{{ url_for('inventory_new') }}" class="btn btn-navy"><i class="bi bi-plus-lg"></i> Add product</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="card mb-3"><div class="card-body">
+  <form class="row g-2 align-items-end">
+    <div class="col-sm-4"><label class="form-label small fw-semibold">Category</label>
+      <select name="category" class="form-select"><option value="">All categories</option>
+        {% for c in categories %}<option {% if c == category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+    <div class="col-sm-6"><label class="form-label small fw-semibold">Search</label><input name="q" value="{{ q }}" placeholder="Product name or SKU" class="form-control"></div>
+    <div class="col-sm-2"><button class="btn btn-navy w-100"><i class="bi bi-funnel"></i> Filter</button></div>
+  </form>
+</div></div>
+
+<div class="card"><div class="card-body p-0"><div class="table-responsive">
+  <table class="table table-hover">
+    <thead><tr><th class="ps-3">SKU</th><th>Product</th><th>Category</th><th class="text-end">Price</th><th class="text-end">Stock</th>
+      <th class="text-end">Demand / day <span class="ai-chip ms-1">AI</span></th><th class="text-end">Days left</th><th>Status</th><th class="text-end pe-3">Suggested order</th></tr></thead>
+    <tbody>
+    {% for p in products %}{% set ai = reorder.get(p.id) %}
+      <tr>
+        <td class="ps-3 text-muted small">{{ p.sku }}</td>
+        <td><a href="{{ url_for('inventory_detail', product_id=p.id) }}">{{ p.name }}</a></td>
+        <td>{{ p.category }}</td>
+        <td class="text-end">{{ p.price|inr(2) }}</td>
+        <td class="text-end fw-semibold">{{ p.stock }}</td>
+        <td class="text-end">{{ ai.daily_demand if ai else '—' }}</td>
+        <td class="text-end">{{ ai.days_left if ai and ai.days_left is not none else '—' }}</td>
+        <td>{{ status_badge(ai.status) if ai else '' }}</td>
+        <td class="text-end pe-3">{% if ai and ai.suggested_qty %}<b>{{ ai.suggested_qty }}</b> units{% else %}<span class="text-muted">—</span>{% endif %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="9" class="text-center text-muted py-5">No products match.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+<p class="small text-muted mt-2">Demand is estimated from the last 7 and 30 days of sales. Suggested orders cover the supplier lead time plus two weeks of stock.</p>
+{% endblock %}

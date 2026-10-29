@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, segment_badge %}
+{% block title %}AI Insights{% endblock %}
+{% block eyebrow %}Machine learning{% endblock %}
+{% block heading %}AI Insights{% endblock %}
+{% block content %}
+
+<!-- 1. Forecast -->
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span class="card-title-sm">1 · Sales forecast — next 14 days</span>
+    <span class="ai-chip"><i class="bi bi-cpu"></i>{{ forecast.model if forecast.ready else 'Forecast' }}</span>
+  </div>
+  <div class="card-body">
+    {% if forecast.ready %}
+    <div class="row g-3 mb-3">
+      <div class="col-md-3"><div class="label text-muted small fw-semibold">Forecast, next 7 days</div><div class="display-num fs-3 fw-bold">{{ forecast.next7|inr }}</div></div>
+      <div class="col-md-3"><div class="label text-muted small fw-semibold">Last 7 days (actual)</div><div class="display-num fs-3 fw-bold">{{ forecast.last7|inr }}</div></div>
+      <div class="col-md-3"><div class="label text-muted small fw-semibold">Expected change</div><div class="display-num fs-3 fw-bold {{ 'text-success' if forecast.change_pct >= 0 else 'text-danger' }}">{{ '%+.1f'|format(forecast.change_pct) }}%</div></div>
+      <div class="col-md-3"><div class="label text-muted small fw-semibold">Accuracy on last 14 days (held out)</div><div class="display-num fs-3 fw-bold">{{ forecast.accuracy }}%</div></div>
+    </div>
+    <div style="height:320px"><canvas id="fc"></canvas></div>
+    <p class="small text-muted mt-2 mb-0">The model learns the overall trend (about {{ forecast.trend_per_day|inr }} per day) and the weekly pattern, e.g. busier weekends. Accuracy is measured on two weeks of data the model did not see during training.</p>
+    {% else %}<p class="text-muted mb-0">{{ forecast.message }}</p>{% endif %}
+  </div>
+</div>
+
+<!-- 2. Reorder -->
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span class="card-title-sm">2 · Smart reorder suggestions</span>
+    <span class="small text-muted">{{ reorder|length }} need action · {{ healthy }} healthy · lead time {{ lead }} days + {{ cover }} days cover</span>
+  </div>
+  <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover">
+    <thead><tr><th class="ps-3">Product</th><th>Supplier</th><th class="text-end">Stock</th><th class="text-end">Demand / day</th><th class="text-end">Days left</th><th>Status</th><th class="text-end">Order qty</th><th class="text-end pe-3">Est. cost</th></tr></thead>
+    <tbody>{% for r in reorder %}
+      <tr><td class="ps-3"><a href="{{ url_for('inventory_detail', product_id=r.id) }}">{{ r.name }}</a></td><td class="small">{{ r.supplier or '—' }}</td>
+      <td class="text-end">{{ r.stock }}</td><td class="text-end">{{ r.daily_demand }}</td><td class="text-end">{{ r.days_left if r.days_left is not none else '—' }}</td>
+      <td>{{ status_badge(r.status) }}</td><td class="text-end fw-bold">{{ r.suggested_qty }}</td><td class="text-end pe-3">{{ r.est_cost|inr }}</td></tr>
+    {% else %}<tr><td colspan="8" class="text-center text-muted py-4">All products are well stocked.</td></tr>{% endfor %}
+    </tbody>
+    {% if reorder %}<tfoot><tr><th colspan="7" class="text-end">Total purchase budget</th><th class="text-end pe-3">{{ reorder|sum(attribute='est_cost')|inr }}</th></tr></tfoot>{% endif %}
+  </table></div></div>
+</div>
+
+<div class="row g-3">
+  <!-- 3. Segments -->
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center"><span class="card-title-sm">3 · Customer segments</span><span class="ai-chip">K-Means on RFM</span></div>
+      <div class="card-body">
+        {% if segments.ready %}
+        <div style="height:220px" class="mb-3"><canvas id="seg"></canvas></div>
+        <table class="table"><thead><tr><th>Segment</th><th class="text-end">Customers</th><th class="text-end">Avg orders</th><th class="text-end">Avg spend</th></tr></thead>
+        <tbody>{% for s in segments.summary %}
+          <tr><td>{{ segment_badge(s.segment) }}<div class="small text-muted mt-1">{{ s.action }}</div></td>
+          <td class="text-end">{{ s.customers }}</td><td class="text-end">{{ s.avg_orders }}</td><td class="text-end">{{ s.avg_spend|inr }}</td></tr>
+        {% endfor %}</tbody></table>
+        <p class="small text-muted mb-0">RFM = how <b>R</b>ecently, how <b>F</b>requently and how much (<b>M</b>onetary) each customer buys.</p>
+        {% else %}<p class="text-muted">At least 8 customers with purchases are needed.</p>{% endif %}
+      </div>
+    </div>
+  </div>
+  <!-- 4. Anomalies -->
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center"><span class="card-title-sm">4 · Unusual transactions</span><span class="ai-chip">Isolation Forest</span></div>
+      <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover">
+        <thead><tr><th class="ps-3">Invoice</th><th>Customer</th><th class="text-end">Total</th><th class="pe-3">Why flagged</th></tr></thead>
+        <tbody>{% for a in anomalies %}
+          <tr><td class="ps-3"><a href="{{ url_for('sales_detail', sale_id=a.id) }}">{{ a.invoice_no }}</a><div class="small text-muted">{{ a.sale_date|dt('%d %b %Y') }}</div></td>
+          <td>{{ a.customer }}</td><td class="text-end fw-semibold">{{ a.total|inr }}</td><td class="pe-3 small">{{ a.reason }}</td></tr>
+        {% else %}<tr><td colspan="4" class="text-center text-muted py-4">Nothing unusual detected.</td></tr>{% endfor %}</tbody>
+      </table></div>
+      <p class="small text-muted px-3 pt-2">Flags orders whose value, units or item mix differ sharply from normal - possible billing errors, bulk orders or fraud to verify.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  forecastChart("fc", {{ forecast|tojson }});
+  {% if segments.ready %}
+  barChart("seg", {{ segments.summary|map(attribute='segment')|list|tojson }}, {{ segments.summary|map(attribute='customers')|list|tojson }}, "Customers", false);
+  {% endif %}
+</script>
+{% endblock %}

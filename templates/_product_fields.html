@@ -1,0 +1,11 @@
+<div class="row g-3">
+  <div class="col-md-4"><label class="form-label fw-semibold">SKU</label><input name="sku" value="{{ product.get('sku', '') if product else '' }}" class="form-control" required></div>
+  <div class="col-md-8"><label class="form-label fw-semibold">Product name</label><input name="name" value="{{ product.get('name', '') if product else '' }}" class="form-control" required></div>
+  <div class="col-md-6"><label class="form-label fw-semibold">Category</label>
+    <select name="category" class="form-select">{% for c in categories %}<option {% if product and product.get('category') == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+  <div class="col-md-6"><label class="form-label fw-semibold">Supplier</label><input name="supplier" value="{{ (product.get('supplier') or '') if product else '' }}" class="form-control"></div>
+  <div class="col-md-3"><label class="form-label fw-semibold">Selling price (₹)</label><input name="price" type="number" step="0.01" min="0" value="{{ product.get('price', '') if product else '' }}" class="form-control" required></div>
+  <div class="col-md-3"><label class="form-label fw-semibold">Cost price (₹)</label><input name="cost" type="number" step="0.01" min="0" value="{{ product.get('cost', '') if product else '' }}" class="form-control" required></div>
+  <div class="col-md-3"><label class="form-label fw-semibold">Stock</label><input name="stock" type="number" min="0" value="{{ product.get('stock', 0) if product else 0 }}" class="form-control"></div>
+  <div class="col-md-3"><label class="form-label fw-semibold">Reorder level</label><input name="reorder_level" type="number" min="0" value="{{ product.get('reorder_level', 10) if product else 10 }}" class="form-control"></div>
+</div>

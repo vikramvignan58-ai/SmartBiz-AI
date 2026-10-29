@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Error {{ code }}{% endblock %}
+{% block eyebrow %}Error {{ code }}{% endblock %}
+{% block heading %}Not found{% endblock %}
+{% block content %}
+<div class="card p-4"><p class="mb-3">{{ message }}</p><a href="{{ url_for('dashboard') }}" class="btn btn-navy align-self-start">Back to dashboard</a></div>
+{% endblock %}
+{% block auth %}<div class="container py-5"><h1>{{ code }}</h1><p>{{ message }}</p><a href="{{ url_for('login') }}">Sign in</a></div>{% endblock %}

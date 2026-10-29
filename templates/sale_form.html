@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}New sale{% endblock %}
+{% block eyebrow %}Billing{% endblock %}
+{% block heading %}New sale{% endblock %}
+{% block content %}
+<form method="post" id="sale-form" class="row g-3">
+  <div class="col-xl-8">
+    <div class="card">
+      <div class="card-header"><span class="card-title-sm">Items</span></div>
+      <div class="card-body">
+        <div class="row g-2 small fw-semibold text-muted mb-1 d-none d-md-flex">
+          <div class="col-md-6">Product</div><div class="col-md-2">Qty</div><div class="col-md-2">Price</div><div class="col-md-2 text-end">Line total</div>
+        </div>
+        <div id="lines">
+          <div class="row g-2 align-items-center line-item mb-2">
+            <div class="col-md-6">
+              <select name="product_id" class="form-select" required>
+                <option value="">Select a product…</option>
+                {% for p in products %}
+                  <option value="{{ p.id }}" data-price="{{ p.price }}" data-stock="{{ p.stock }}" {% if not p.stock %}disabled{% endif %}>
+                    {{ p.name }} ({{ p.sku }}){% if not p.stock %} — out of stock{% endif %}</option>
+                {% endfor %}
+              </select>
+              <div class="small text-muted stock mt-1"></div>
+            </div>
+            <div class="col-md-2"><input type="number" name="quantity" min="1" value="1" class="form-control" required></div>
+            <div class="col-md-2 price text-muted">—</div>
+            <div class="col-md-2 d-flex justify-content-end align-items-center gap-2">
+              <span class="line-total fw-semibold">₹0</span>
+              <button type="button" class="btn btn-sm btn-outline-danger remove" aria-label="Remove line"><i class="bi bi-x-lg"></i></button>
+            </div>
+          </div>
+        </div>
+        <button type="button" id="add-line" class="btn btn-outline-secondary btn-sm mt-2"><i class="bi bi-plus"></i> Add item</button>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card">
+      <div class="card-header"><span class="card-title-sm">Customer &amp; payment</span></div>
+      <div class="card-body">
+        <label class="form-label fw-semibold">Customer</label>
+        <select name="customer_id" class="form-select mb-2">
+          <option value="">Walk-in customer</option>
+          {% for c in customers %}<option value="{{ c.id }}" {% if form.get('customer_id') == c.id|string %}selected{% endif %}>{{ c.name }}{% if c.phone %} · {{ c.phone }}{% endif %}</option>{% endfor %}
+        </select>
+        <a href="{{ url_for('customers_new') }}" class="small">+ Add a new customer</a>
+        <label class="form-label fw-semibold mt-3">Payment method</label>
+        <div class="d-flex gap-2 mb-4">
+          {% for m in methods %}
+            <input type="radio" class="btn-check" name="payment_method" id="pm-{{ m }}" value="{{ m }}" {% if (form.get('payment_method') or 'UPI') == m %}checked{% endif %}>
+            <label class="btn btn-outline-secondary flex-fill" for="pm-{{ m }}">{{ m }}</label>
+          {% endfor %}
+        </div>
+        <div class="d-flex justify-content-between align-items-baseline border-top pt-3 mb-3">
+          <span class="fw-semibold">Total</span><span id="grand-total" class="display-num fs-2 fw-bold" style="color:#14213d">₹0</span>
+        </div>
+        <button class="btn btn-accent w-100 py-2"><i class="bi bi-check2-circle"></i> Save sale &amp; update stock</button>
+        <p class="small text-muted mt-2 mb-0">Totals are recalculated on the server and stock is checked before saving.</p>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

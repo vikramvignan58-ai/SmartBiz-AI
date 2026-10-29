@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ sale.invoice_no }}{% endblock %}
+{% block eyebrow %}Invoice{% endblock %}
+{% block heading %}{{ sale.invoice_no }}{% endblock %}
+{% block actions %}<button onclick="window.print()" class="btn btn-outline-secondary no-print"><i class="bi bi-printer"></i> Print</button>{% endblock %}
+{% block content %}
+<div class="card invoice">
+  <div class="card-body p-4 p-md-5">
+    <div class="d-flex justify-content-between flex-wrap gap-3 mb-4">
+      <div>
+        <h2 class="h4 fw-bold mb-1" style="color:#14213d">{{ business_name }}</h2>
+        <div class="text-muted small">Tax invoice / bill of sale</div>
+      </div>
+      <div class="text-md-end">
+        <div class="fw-semibold">{{ sale.invoice_no }}</div>
+        <div class="text-muted small">{{ sale.sale_date|dt }}</div>
+        <div class="text-muted small">Payment: {{ sale.payment_method }}{% if sale.cashier %} · Billed by {{ sale.cashier }}{% endif %}</div>
+      </div>
+    </div>
+    <div class="mb-4">
+      <div class="small text-muted text-uppercase fw-semibold">Billed to</div>
+      {% if sale.customer %}
+        <a href="{{ url_for('customers_detail', customer_id=sale.customer_id) }}" class="fw-semibold">{{ sale.customer }}</a>
+        <div class="small text-muted">{{ sale.phone or '' }} {{ sale.city or '' }}</div>
+      {% else %}<div class="fw-semibold">Walk-in customer</div>{% endif %}
+    </div>
+    <table class="table">
+      <thead><tr><th>#</th><th>Item</th><th class="text-end">Qty</th><th class="text-end">Rate</th><th class="text-end">Amount</th></tr></thead>
+      <tbody>{% for i in items %}
+        <tr><td>{{ loop.index }}</td><td>{{ i.name }} <span class="text-muted small">{{ i.sku }}</span></td>
+        <td class="text-end">{{ i.quantity }}</td><td class="text-end">{{ i.unit_price|inr(2) }}</td><td class="text-end">{{ i.line_total|inr(2) }}</td></tr>
+      {% endfor %}</tbody>
+      <tfoot><tr><th colspan="4" class="text-end">Grand total</th><th class="text-end fs-5">{{ sale.total|inr(2) }}</th></tr></tfoot>
+    </table>
+    <p class="text-muted small mb-0">Thank you for shopping with us.</p>
+  </div>
+</div>
+<a href="{{ url_for('sales') }}" class="btn btn-link px-0 mt-3 no-print">← Back to sales</a>
+{% endblock %}

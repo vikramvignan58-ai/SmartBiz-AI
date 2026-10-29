@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block eyebrow %}{{ now.strftime('%A, %d %B %Y') }}{% endblock %}
+{% block heading %}Welcome back, {{ session.full_name.split(' ')[0] }}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl">
+    <div class="card kpi dark"><div class="d-flex justify-content-between"><div>
+      <div class="label">Today’s revenue</div><div class="value">{{ kpi.today_revenue|inr }}</div>
+      <div class="sub">{{ kpi.today_orders }} orders</div></div><div class="icon"><i class="bi bi-currency-rupee"></i></div></div></div>
+  </div>
+  <div class="col-6 col-xl">
+    <div class="card kpi"><div class="d-flex justify-content-between"><div>
+      <div class="label">This month</div><div class="value">{{ kpi.month_revenue|inr }}</div>
+      <div class="sub">{{ kpi.month_orders }} orders</div></div><div class="icon"><i class="bi bi-calendar3"></i></div></div></div>
+  </div>
+  <div class="col-6 col-xl">
+    <div class="card kpi"><div class="d-flex justify-content-between"><div>
+      <div class="label">Next 7 days (AI)</div>
+      <div class="value">{% if forecast.ready %}{{ forecast.next7|inr }}{% else %}—{% endif %}</div>
+      <div class="sub">{% if forecast.ready %}{{ '%+.1f'|format(forecast.change_pct) }}% vs last 7 days{% else %}{{ forecast.message }}{% endif %}</div>
+      </div><div class="icon"><i class="bi bi-stars"></i></div></div></div>
+  </div>
+  <div class="col-6 col-xl">
+    <a href="{{ url_for('inventory') }}" class="text-decoration-none"><div class="card kpi"><div class="d-flex justify-content-between"><div>
+      <div class="label">Low-stock items</div><div class="value">{{ kpi.low_stock }}</div>
+      <div class="sub">Stock value {{ kpi.stock_value|inr }}</div></div><div class="icon"><i class="bi bi-box-seam"></i></div></div></div></a>
+  </div>
+  <div class="col-6 col-xl">
+    <a href="{{ url_for('customers') }}" class="text-decoration-none"><div class="card kpi"><div class="d-flex justify-content-between"><div>
+      <div class="label">Customers</div><div class="value">{{ kpi.customers }}</div>
+      <div class="sub">Registered</div></div><div class="icon"><i class="bi bi-people"></i></div></div></div></a>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-xl-8">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="card-title-sm">Revenue — last 30 days and 7-day forecast</span>
+        <span class="ai-chip"><i class="bi bi-stars"></i>ML forecast</span>
+      </div>
+      <div class="card-body"><div style="height:300px"><canvas id="revChart"></canvas></div></div>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="card-title-sm">AI insights</span>
+        <a href="{{ url_for('insights') }}" class="small">Details →</a>
+      </div>
+      <div class="card-body py-1">
+        {% for i in insights %}
+          <div class="insight"><i class="bi bi-{{ i.icon }} text-{{ i.tone }}"></i><div>{{ i.text }}</div></div>
+        {% else %}
+          <p class="text-muted my-3">Not enough data yet for insights.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-xl-4">
+    <div class="card h-100">
+      <div class="card-header"><span class="card-title-sm">Top products (30 days)</span></div>
+      <div class="card-body p-0">
+        <table class="table table-hover"><thead><tr><th class="ps-3">Product</th><th class="text-end">Units</th><th class="text-end pe-3">Revenue</th></tr></thead>
+        <tbody>{% for p in top_products %}
+          <tr><td class="ps-3"><a href="{{ url_for('inventory_detail', product_id=p.id) }}">{{ p.name }}</a></td>
+          <td class="text-end">{{ p.qty }}</td><td class="text-end pe-3">{{ p.revenue|inr }}</td></tr>
+        {% endfor %}</tbody></table>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-3">
+    <div class="card h-100">
+      <div class="card-header"><span class="card-title-sm">Sales by category</span></div>
+      <div class="card-body"><div style="height:260px"><canvas id="catChart"></canvas></div></div>
+    </div>
+  </div>
+  <div class="col-xl-5">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between"><span class="card-title-sm">Recent sales</span><a href="{{ url_for('sales') }}" class="small">All sales →</a></div>
+      <div class="card-body p-0">
+        <table class="table table-hover"><thead><tr><th class="ps-3">Invoice</th><th>Customer</th><th>Time</th><th class="text-end pe-3">Total</th></tr></thead>
+        <tbody>{% for s in recent %}
+          <tr><td class="ps-3"><a href="{{ url_for('sales_detail', sale_id=s.id) }}">{{ s.invoice_no }}</a></td>
+          <td>{{ s.customer }}</td><td class="text-muted small">{{ s.sale_date|dt('%d %b, %I:%M %p') }}</td>
+          <td class="text-end pe-3">{{ s.total|inr }}</td></tr>
+        {% endfor %}</tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  forecastChart("revChart", {{ forecast|tojson }});
+  const cat = {{ category_chart|tojson }};
+  doughnutChart("catChart", cat.labels, cat.values);
+</script>
+{% endblock %}
